@@ -21,6 +21,34 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  /**
+   * Wait for an element matching a selector to appear in the DOM.
+   * Uses MutationObserver for efficiency instead of polling.
+   */
+  function waitForElement(selector, parent, timeoutMs) {
+    return new Promise((resolve) => {
+      const existing = parent.querySelector(selector);
+      if (existing) {
+        resolve(existing);
+        return;
+      }
+
+      const obs = new MutationObserver(() => {
+        const el = parent.querySelector(selector);
+        if (el) {
+          obs.disconnect();
+          resolve(el);
+        }
+      });
+      obs.observe(parent, { childList: true, subtree: true });
+
+      setTimeout(() => {
+        obs.disconnect();
+        resolve(null);
+      }, timeoutMs);
+    });
+  }
+
   // Load enabled state from storage
   chrome.storage.local.get({ enabled: true }, (result) => {
     enabled = result.enabled;
@@ -65,13 +93,20 @@
       }
     }
 
-    // Strategy 2: Check aria-label attributes that might indicate promotion
-    const links = article.querySelectorAll("a");
-    for (const link of links) {
-      const ariaLabel = link.getAttribute("aria-label");
-      if (ariaLabel && ariaLabel.toLowerCase().includes("promoted")) {
-        return true;
+    // Strategy 2: Check for "Promoted" text (legacy label)
+    for (const span of spans) {
+      if (span.textContent.trim() === "Promoted") {
+        const tweetText = article.querySelector('[data-testid="tweetText"]');
+        if (!tweetText || !tweetText.contains(span)) {
+          return true;
+        }
       }
+    }
+
+    // Strategy 3: Check for placementTracking data-testid (present on promoted content)
+    const cell = article.closest('[data-testid="cellInnerDiv"]');
+    if (cell && cell.querySelector('[data-testid="placementTracking"]')) {
+      return true;
     }
 
     return false;
@@ -155,8 +190,17 @@
     menuBtn.click();
     log("Clicked menu button, waiting for dropdown...");
 
-    // Step 2: Wait for the dropdown menu to appear
-    await sleep(MENU_WAIT_MS);
+    // Step 2: Wait for the dropdown menu to appear (MutationObserver-based)
+    const menu = await waitForElement('[role="menu"]', document.body, 2000);
+    if (!menu) {
+      log("Dropdown menu did not appear");
+      closeMenu();
+      await sleep(200);
+      return false;
+    }
+
+    // Brief pause for menu items to render
+    await sleep(150);
 
     // Step 3: Find and click "Not interested in this ad"
     const notInterestedItem = findNotInterestedMenuItem();
