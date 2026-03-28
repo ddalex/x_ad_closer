@@ -90,6 +90,11 @@ input:checked + .slider::before {
   padding: 10px 12px;
   background: #1e2d3d;
   border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.stats:last-of-type {
+  margin-bottom: 12px;
 }
 
 .stats-label {
@@ -101,4 +106,21 @@ input:checked + .slider::before {
   font-size: 18px;
   font-weight: 700;
   color: #1d9bf0;
+}
+
+.reset-btn {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #38444d;
+  color: #8899a6;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reset-btn:hover {
+  background: #4a5568;
+  color: #e7e9ea;
 }

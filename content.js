@@ -7,6 +7,7 @@
   const MENU_WAIT_MS = 600;
   const BETWEEN_ADS_DELAY_MS = 1500;
   const SCAN_DEBOUNCE_MS = 300;
+  const MAX_RETRIES = 3;
 
   let enabled = true;
   let dismissedCount = 0;
@@ -215,7 +216,12 @@
     log("Clicked 'Not interested in this ad'");
 
     dismissedCount++;
-    chrome.storage.local.set({ dismissedCount });
+    chrome.storage.local.get({ dismissedCountTotal: 0 }, (result) => {
+      chrome.storage.local.set({
+        dismissedCount,
+        dismissedCountTotal: result.dismissedCountTotal + 1,
+      });
+    });
 
     await sleep(DISMISS_DELAY_MS);
     return true;
@@ -223,23 +229,33 @@
 
   /**
    * Process the ad queue one tweet at a time.
+   * Queue entries are { article, retries } objects.
    */
   async function processQueue() {
     if (processing) return;
     processing = true;
 
     while (adQueue.length > 0 && enabled) {
-      const article = adQueue.shift();
+      const entry = adQueue.shift();
+      const { article, retries } = entry;
 
-      // Double-check it's still in the DOM and still an ad
+      // Double-check it's still in the DOM
       if (!document.contains(article)) continue;
       if (article.hasAttribute(PROCESSED_ATTR)) continue;
 
-      article.setAttribute(PROCESSED_ATTR, "true");
-
       const success = await dismissAd(article);
       if (success) {
+        article.setAttribute(PROCESSED_ATTR, "true");
         log(`Ad dismissed (total: ${dismissedCount})`);
+      } else if (retries < MAX_RETRIES) {
+        // Re-queue with incremented retry count and longer delay
+        const retryDelay = BETWEEN_ADS_DELAY_MS * (retries + 1);
+        log(`Dismissal failed, retrying (${retries + 1}/${MAX_RETRIES}) in ${retryDelay}ms`);
+        await sleep(retryDelay);
+        adQueue.push({ article, retries: retries + 1 });
+      } else {
+        article.setAttribute(PROCESSED_ATTR, "true");
+        log(`Giving up on ad after ${MAX_RETRIES} retries`);
       }
 
       // Delay between processing ads
@@ -264,7 +280,7 @@
       if (tweet.hasAttribute(PROCESSED_ATTR)) continue;
 
       if (isAdTweet(tweet)) {
-        adQueue.push(tweet);
+        adQueue.push({ article: tweet, retries: 0 });
         newAdsFound++;
       }
     }

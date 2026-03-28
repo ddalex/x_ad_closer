@@ -13,18 +13,33 @@ Unlike traditional ad blockers that just hide ads, this extension actively tells
 
 ## Installation
 
-1. Clone or download this repository
+### From ZIP (easiest)
+
+1. Download `x_ad_closer.zip` from this repository
+2. Unzip it to a folder on your computer
+3. Open Chrome and go to `chrome://extensions/`
+4. Enable **Developer mode** (toggle in top right)
+5. Click **Load unpacked**
+6. Select the unzipped folder
+7. Navigate to [x.com](https://x.com) — the extension will start working automatically
+
+### From source
+
+1. Clone this repository
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable **Developer mode** (toggle in top right)
 4. Click **Load unpacked**
-5. Select the `x_ad_closer` folder
+5. Select the repository folder
 6. Navigate to [x.com](https://x.com) — the extension will start working automatically
 
-## Usage
+## Features
 
-- Click the extension icon in the toolbar to open the popup
-- Use the toggle to enable/disable the extension
-- The popup shows a count of ads dismissed
+- **Auto-dismiss ads** — detects promoted tweets and clicks "Not interested in this ad" automatically
+- **Badge count** — shows the number of dismissed ads on the extension icon in the toolbar
+- **Session & all-time stats** — popup shows both current session and total lifetime dismissed counts
+- **Retry on failure** — retries up to 3 times with increasing delays if a dismissal fails
+- **Toggle on/off** — enable or disable via the popup, takes effect immediately
+- **Reset counts** — clear session and all-time stats from the popup
 
 ## Debugging
 

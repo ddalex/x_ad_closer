@@ -2,3 +2,4 @@
 *.crx
 *.pem
 *.zip
+!x_ad_closer.zip
